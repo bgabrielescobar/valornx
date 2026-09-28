@@ -1,0 +1,4 @@
+# Finales de línea de Unix en todo el texto: los scripts y Makefiles se usan en WSL.
+* text=auto eol=lf
+*.jpg binary
+*.png binary

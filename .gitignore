@@ -1,0 +1,14 @@
+# Compilación
+build/
+*.elf
+*.nacp
+*.map
+pc/build/
+pc/shots/
+pc/sim_sd/
+
+# Archivos compilados para la consola (se publican aparte, en Releases)
+*.nro
+*.ovl
+*.zip
+/ValorNX/

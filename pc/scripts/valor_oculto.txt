@@ -1,0 +1,54 @@
+echo == Busqueda de valor oculto (vida)
+wait 2
+press DOWN 2
+press A
+wait 1
+shot 21_tipo_oculto
+press DOWN 2
+press A
+waittask
+shot 22_memoria_guardada
+game damage 10
+game noise 20000
+press A
+waittask
+shot 23_oculto_disminuyo
+game noise 20000
+press DOWN 3
+wait 1
+shot 24_oculto_menu
+press A
+waittask
+shot 25_oculto_no_cambio
+game damage 2.5
+press A
+waittask
+shot 26_oculto_final
+press A
+wait 2
+shot 27_oculto_resultados
+press X
+type 100
+press PLUS
+wait 2
+expect_hp 100
+shot 28_cambiar_todos
+press B
+press B
+press DOWN 3
+press A
+wait 1
+shot 29_ajustes
+press DOWN
+press A
+wait 1
+shot 30_ayuda
+press R 2
+shot 31_ayuda_abajo
+press B
+press DOWN
+press A
+wait 1
+shot 32_confirmar_borrar
+press B
+press B

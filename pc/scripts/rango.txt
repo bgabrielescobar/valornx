@@ -1,0 +1,55 @@
+echo == Buscar entre dos números: el 0 no se admite
+wait 2
+shot 80_inicio_con_rango
+press DOWN
+press A
+wait 1
+type 0
+press PLUS
+type 100
+press PLUS
+wait 1
+shot 81_rango_con_cero
+press X
+press B
+press X
+press B
+echo == Dinero entre 1600 y 1400 (al revés: da igual el orden)
+press A
+wait 1
+type 1600
+press PLUS
+type 1400
+wait 1
+shot 82_rango_escrito
+press PLUS
+waittask
+shot 83_rango_paso1
+echo == Gasta 300: "Disminuyó"
+game spend 300
+game noise 5000
+press A
+waittask
+shot 84_rango_disminuyo
+echo == Otro rango más pequeño
+press DOWN 5
+wait 1
+shot 85_menu_rango
+press A
+wait 1
+type 1150
+press PLUS
+type 1250
+press PLUS
+waittask
+shot 86_rango_final
+press A
+wait 2
+shot 87_rango_resultados
+press A
+press A
+type 5000
+press PLUS
+wait 2
+expect_money 5000
+shot 88_rango_cambiado

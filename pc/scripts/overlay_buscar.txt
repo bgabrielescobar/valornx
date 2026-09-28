@@ -1,0 +1,126 @@
+echo == Overlay: pestaña Buscar (derecha en la cruceta)
+ovl show
+ovl press RIGHT
+ovl shot 70_ovl_buscar
+echo == Buscar un valor que ves: 1500
+mem reset
+ovl press A
+ovl shot 71_ovl_buscar_teclado
+ovl type 1500
+ovl press PLUS
+ovl expect_busy 1
+ovl shot 72_ovl_buscando
+ovl waittask
+ovl expect_busy 0
+mem report 1024
+ovl shot 73_ovl_encontrados
+echo == Cerrar el overlay (B), gastar en el juego y volver a abrirlo
+ovl press B
+ovl expect_closed 1
+ovl hide
+game spend 275
+game noise 3000
+ovl show
+ovl shot 74_ovl_sigue_la_busqueda
+echo == Buscar el nuevo valor: 1225
+ovl press A
+ovl type 1225
+ovl press PLUS
+ovl waittask
+ovl shot 75_ovl_quedan_pocos
+echo == Ver resultados y cambiar el primero a 5000
+ovl press A
+ovl shot 76_ovl_resultados
+ovl press A
+ovl shot 77_ovl_opciones_resultado
+ovl press A
+ovl type 5000
+ovl press PLUS
+expect_money 5000
+echo == Y: congelar desde los resultados
+ovl press Y
+game spend 100
+expect_money 5000
+expect_frozen_money 1
+ovl press Y
+expect_frozen_money 0
+echo == Guardar en Mis valores con el nombre "Dinero"
+ovl press A
+ovl press DOWN 2
+ovl press A
+ovl shot 78_ovl_nombre
+ovl press A
+expect_file switch/ValorNX/guardados/0100ABCD12340000.txt
+ovl press B
+ovl press LEFT
+ovl wait 20
+ovl shot 79_ovl_mis_valores_nuevo
+echo == La app ve la búsqueda y el valor guardado desde el overlay (sin volver a abrirla)
+wait 600
+press DOWN 3
+wait 2
+shot 69_app_ve_busqueda_del_overlay
+press B
+press DOWN
+press A
+wait 2
+shot 68_app_ve_valor_del_overlay
+press B
+echo == Valor oculto desde el overlay: la vida (decimal)
+ovl show
+ovl press RIGHT
+ovl press UP
+ovl press A
+ovl press A
+ovl shot 67_ovl_borrar_busqueda
+ovl press DOWN 2
+ovl press A
+ovl shot 66_ovl_tipo_oculto
+ovl press DOWN 2
+mem reset
+ovl press A
+ovl expect_busy 1
+ovl shot 65_ovl_guardando_memoria
+ovl waittask
+mem report 1024
+ovl shot 64_ovl_memoria_guardada
+ovl hide
+game damage 10
+game noise 5000
+ovl show
+mem reset
+ovl press A
+ovl waittask
+mem report 1024
+ovl shot 63_ovl_disminuyo
+ovl hide
+game damage 5
+game noise 5000
+ovl show
+ovl press A
+ovl waittask
+echo == Entre dos números sobre lo que queda (vida 72.5 -> entre 70 y 75)
+ovl press DOWN 5
+ovl press A
+ovl type 70
+ovl press PLUS
+ovl shot 62_ovl_rango_hasta
+ovl type 75
+ovl press PLUS
+ovl waittask
+ovl shot 61_ovl_rango_resultado
+ovl press A
+ovl shot 60_ovl_resultados_vida
+echo == Cerrar el overlay a mitad de una búsqueda la cancela
+ovl press B
+ovl press UP
+ovl press A
+ovl press A
+ovl press A
+ovl type 1500
+ovl press PLUS
+ovl expect_busy 1
+ovl hide
+ovl show
+ovl shot 59_ovl_busqueda_cancelada
+ovl expect_busy 0

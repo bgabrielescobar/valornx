@@ -1,0 +1,8 @@
+nogame 1
+reconnect
+wait 2
+shot 41_sin_juego
+nogame 0
+press A
+wait 2
+shot 42_reconectado

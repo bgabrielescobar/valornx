@@ -1,0 +1,71 @@
+echo == Overlay sin valores guardados
+ovl show
+ovl shot 90_ovl_sin_valores
+ovl hide
+echo == Con valores guardados (como si se hubieran guardado desde la app)
+addfav money Dinero
+addfav exp Experiencia
+addfav hp Vida
+addfav level Nivel
+ovl show
+ovl shot 91_ovl_lista
+echo == A: cambiar el dinero con el teclado del overlay
+ovl press A
+ovl shot 92_ovl_teclado
+ovl type 99999
+ovl shot 93_ovl_teclado_escrito
+ovl press PLUS
+ovl shot 94_ovl_cambiado
+expect_money 99999
+echo == Y: congelar el dinero
+ovl press Y
+game spend 100
+expect_money 99999
+expect_frozen_money 1
+echo == X en la experiencia: multiplicar x3
+ovl press DOWN
+ovl press X
+ovl shot 95_ovl_opciones
+ovl press DOWN 2
+ovl press A
+ovl shot 96_ovl_factor
+ovl press DOWN
+ovl press A
+game tick
+game gain_exp 100
+game tick
+expect_exp 12645
+ovl wait 20
+ovl shot 97_ovl_lista_x3
+echo == Pausar el multiplicador desde el overlay
+ovl press X
+ovl press DOWN 2
+ovl press A
+game gain_exp 10
+game tick
+expect_exp 12655
+echo == Valores rápidos en la vida (decimal)
+ovl press DOWN
+ovl press A
+ovl press DOWN 3
+ovl press A
+ovl press PLUS
+expect_hp 999
+ovl wait 200
+ovl shot 98_ovl_final
+echo == B en la lista principal cierra el overlay
+ovl press B
+ovl expect_closed 1
+ovl hide
+echo == La app ve lo que hizo el overlay
+reconnect
+wait 2
+press A
+wait 2
+shot 99_app_tras_overlay
+echo == Sin juego
+nogame 1
+ovl show
+ovl shot 89_ovl_sin_juego
+ovl hide
+nogame 0

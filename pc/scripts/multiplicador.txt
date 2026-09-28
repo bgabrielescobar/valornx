@@ -1,0 +1,89 @@
+echo == Multiplicador de experiencia
+wait 2
+press A
+type 12345
+press PLUS
+waittask
+press A
+wait 2
+shot 61_resultado_exp
+press A
+wait 1
+shot 62_menu_con_multiplicar
+press DOWN 3
+press A
+wait 1
+press DOWN 4
+press A
+wait 1
+shot 63_elegir_multiplicador
+press DOWN
+press A
+wait 1
+shot 64_confirmar_multiplicador
+press A
+wait 2
+shot 65_multiplicador_activo
+echo == Gana 100 de EXP: con x3 deben ser 300
+expect_exp 12345
+game gain_exp 100
+wait 1
+expect_exp 12645
+game gain_exp -45
+wait 1
+expect_exp 12600
+press B
+press B
+wait 2
+shot 66_inicio_multiplicador
+press DOWN 4
+press A
+wait 2
+shot 67_mis_valores_x3
+press X
+wait 1
+shot 68_opciones_x3
+press A
+wait 1
+shot 69_menu_multiplicador
+echo == Pausar
+press DOWN
+press A
+wait 2
+game gain_exp 100
+wait 1
+expect_exp 12700
+shot 70_en_pausa
+echo == Reanudar
+press X
+press A
+press DOWN
+press A
+wait 2
+game gain_exp 10
+wait 1
+expect_exp 12730
+echo == Cambiar a x2 y guardarlo como truco
+press X
+press A
+press A
+press A
+press DOWN
+press A
+wait 2
+game gain_exp 10
+wait 1
+expect_exp 12750
+expect_file atmosphere/contents/0100ABCD12340000/cheats/A0A1A2A3A4A5A6A7.txt
+shot 71_x2_guardado
+echo == Quitar
+press X
+press A
+press DOWN 2
+press A
+wait 2
+game gain_exp 10
+wait 1
+expect_exp 12760
+expect_nofile atmosphere/contents/0100ABCD12340000/cheats/A0A1A2A3A4A5A6A7.txt
+shot 72_sin_multiplicador
