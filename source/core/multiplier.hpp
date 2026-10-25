@@ -32,7 +32,11 @@ struct MultiplierSpec {
 
 constexpr uint32_t kMinFactor = 2, kMaxFactor = 1000;
 
-bool multiplierSupported(VType t);   // solo enteros: la máquina virtual no sabe sumar decimales en versiones viejas
+// Solo enteros con los bytes en orden normal: la máquina virtual no sabe sumar decimales en
+// versiones viejas, ni dar la vuelta a los bytes de los tipos BE.
+bool multiplierSupported(VType t);
+// Por qué no se puede multiplicar un valor de tipo t (si !multiplierSupported(t)).
+void multiplierUnsupported(VType t, const std::string& valueName, std::string& title, std::string& body);
 uint64_t multiplierCap(VType t);
 std::vector<uint32_t> buildMultiplierOps(const MultiplierSpec& s);
 // Reconoce un truco generado por buildMultiplierOps (aunque lo cargara Atmosphère desde la microSD).

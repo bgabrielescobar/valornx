@@ -6,16 +6,23 @@
 namespace vnx {
 
 // Tipos de dato que se pueden buscar en la memoria del juego.
-enum class VType : uint8_t { U8 = 0, U16 = 1, S32 = 2, S64 = 3, F32 = 4, F64 = 5 };
-constexpr int kVTypeCount = 6;
+// Los "BE" tienen los bytes al revés (big-endian): así guardan los números los ports de juegos
+// de Wii U o GameCube que traducen el código original (por ejemplo Wind Waker HD).
+enum class VType : uint8_t { U8 = 0, U16 = 1, S32 = 2, S64 = 3, F32 = 4, F64 = 5, U16BE = 6, S32BE = 7, F32BE = 8 };
+constexpr int kVTypeCount = 9;
 
-using TypeMask = uint8_t;
+using TypeMask = uint16_t;
 constexpr TypeMask typeBit(VType t) { return (TypeMask)(1u << (unsigned)t); }
 // "Automático": entero de 4 bytes + decimal (float). Cubre la gran mayoría de juegos.
-constexpr TypeMask kMaskAuto = (TypeMask)((1u << (unsigned)VType::S32) | (1u << (unsigned)VType::F32));
+constexpr TypeMask kMaskAuto = (TypeMask)(typeBit(VType::S32) | typeBit(VType::F32));
+// "Port de Wii U o GameCube": enteros de 2 y 4 bytes + decimal, todos con los bytes al revés.
+constexpr TypeMask kMaskPort = (TypeMask)(typeBit(VType::U16BE) | typeBit(VType::S32BE) | typeBit(VType::F32BE));
 
 int vtypeSize(VType t);
 bool vtypeIsFloat(VType t);
+bool vtypeSwapped(VType t);        // ¿bytes al revés (big-endian)?
+bool maskHasFloat(TypeMask mask);  // ¿alguno de los tipos admite decimales?
+uint64_t swapBytes(uint64_t v, int size);
 const char* vtypeShort(VType t);   // "Entero", "Decimal", ...
 const char* vtypeLabel(VType t);   // "Entero (4 bytes)", ...
 
@@ -61,6 +68,8 @@ bool targetMatch(VType t, uint64_t raw, const Target& tg);
 // Valor como entero con signo, tal y como se compara (U8/U16 sin signo, S32/S64 con signo).
 int64_t rawAsInt(VType t, uint64_t raw);
 
+// "raw" es siempre el valor en el orden normal de la Switch: leer y escribir la memoria
+// pasa por aquí, que da la vuelta a los bytes de los tipos BE.
 uint64_t loadRaw(const uint8_t* p, VType t);
 void storeRaw(uint8_t* p, VType t, uint64_t raw);
 double rawAsDouble(VType t, uint64_t raw);

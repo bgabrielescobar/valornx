@@ -14,7 +14,7 @@ include $(DEVKITPRO)/libnx/switch_rules
 
 APP_TITLE	:=	ValorNX
 APP_AUTHOR	:=	ValorNX
-APP_VERSION	:=	1.3.0
+APP_VERSION	:=	1.4.0
 
 TARGET		:=	ValorNX
 BUILD		:=	build

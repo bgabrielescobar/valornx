@@ -9,6 +9,8 @@ namespace vnx {
 std::vector<uint32_t> cheatStoreStatic(RegionKind region, uint64_t offset, VType type, uint64_t raw) {
     // 0TMR00AA AAAAAAAA VVVVVVVV (VVVVVVVV)
     const uint32_t width = (uint32_t)vtypeSize(type);
+    // Atmosphère escribe el número en el orden normal: a los tipos BE se les da la vuelta antes.
+    if (vtypeSwapped(type)) raw = swapBytes(raw, (int)width);
     std::vector<uint32_t> ops;
     ops.push_back((width << 24) | ((uint32_t)region << 20) | (uint32_t)((offset >> 32) & 0xFF));
     ops.push_back((uint32_t)(offset & 0xFFFFFFFFu));

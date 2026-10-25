@@ -829,6 +829,114 @@ static void testSharedSession() {
     CHECK(!b.sync());
 }
 
+static void testPorts() {
+    printf("[ports de Wii U o GameCube (bytes al revés)]\n");
+    // Valores sueltos: "raw" va siempre en el orden normal; la memoria, al revés.
+    uint64_t raw = 0;
+    CHECK(encodeNumber(VType::U16BE, parseNumber("150"), raw) && raw == 150);
+    const uint8_t rup[2] = {0x00, 0x96};
+    CHECK(loadRaw(rup, VType::U16BE) == 150 && loadRaw(rup, VType::U16) == 38400);
+    uint8_t b[4] = {};
+    storeRaw(b, VType::U16BE, 5000);
+    CHECK(b[0] == 0x13 && b[1] == 0x88);
+    CHECK(encodeNumber(VType::F32BE, parseNumber("1.5"), raw) && raw == 0x3FC00000ull);
+    storeRaw(b, VType::F32BE, raw);
+    CHECK(b[0] == 0x3F && b[1] == 0xC0 && b[2] == 0 && b[3] == 0);
+    CHECK(loadRaw(b, VType::F32BE) == 0x3FC00000ull && formatRaw(VType::F32BE, 0x3FC00000ull) == "1.5");
+    storeRaw(b, VType::S32BE, 0xFFFFFFFEull);
+    CHECK(loadRaw(b, VType::S32BE) == 0xFFFFFFFEull && formatRaw(VType::S32BE, 0xFFFFFFFEull) == "-2");
+    CHECK(vtypeSize(VType::U16BE) == 2 && vtypeSize(VType::S32BE) == 4 && vtypeIsFloat(VType::F32BE));
+    CHECK(vtypeSwapped(VType::U16BE) && !vtypeSwapped(VType::U16) && maskHasFloat(kMaskPort) &&
+          !maskHasFloat(typeBit(VType::U16BE)));
+    CHECK(numberErrorForType(VType::U16BE, parseNumber("70000")).find("65535") != std::string::npos);
+    const int pc = typeChoiceForMask(kMaskPort);
+    CHECK(pc == typeChoiceCount() - 1 && typeMaskLabel(kMaskPort) == "Port de Wii U o GameCube");
+    CHECK(typeChoiceForMask(kMaskAuto) == 0);   // los tipos de siempre no se movieron
+
+    // Buscar las rupias (150, en 2 bytes al revés).
+    MockGame g;
+    SearchSession s(freshDir("ports"));
+    s.open(g.info());
+    uint64_t found = 0;
+    CHECK(run(s.startKnown(g, typeBit(VType::U16), parseNumber("150"), "150", SearchZone::All), &found) ==
+          Task::Status::Done);
+    CHECK(!containsAddr(s, g.rupeesAddr, VType::U16));   // en el orden normal no aparece
+    CHECK(run(s.startKnown(g, kMaskPort, parseNumber("150"), "150", SearchZone::All), &found) ==
+          Task::Status::Done);
+    printf("  150 (port) -> %llu resultados\n", (unsigned long long)found);
+    CHECK(containsAddr(s, g.rupeesAddr, VType::U16BE));
+    CHECK(s.state().types == kMaskPort);
+    // 150 -> 256 cambia el byte alto: al revés, leído en orden normal, parecería que bajó.
+    g.gainRupees(106);
+    CHECK(run(s.refine(g, Relation::Increased, nullptr, ""), &found) == Task::Status::Done);
+    printf("  aumentó -> %llu resultados\n", (unsigned long long)found);
+    CHECK(containsAddr(s, g.rupeesAddr, VType::U16BE));
+    const Number n256 = parseNumber("256");
+    CHECK(run(s.refine(g, Relation::Equal, &n256, "256"), &found) == Task::Status::Done);
+    printf("  = 256 -> %llu resultados\n", (unsigned long long)found);
+    CHECK(containsAddr(s, g.rupeesAddr, VType::U16BE) && found < 50);
+    std::vector<Candidate> list;
+    s.loadCandidates(list, 1000);
+    bool valueOk = false;
+    for (const Candidate& c : list)
+        if (candAddr(c) == g.rupeesAddr) valueOk = c.value == 256 && formatRaw(candType(c), c.value) == "256";
+    CHECK(valueOk);
+
+    // Decimal al revés y "entre dos números".
+    CHECK(run(s.startRange(g, kMaskPort, parseNumber("30"), parseNumber("35"), "30-35", SearchZone::Heap), &found) ==
+          Task::Status::Done);
+    CHECK(containsAddr(s, g.magicAddr, VType::F32BE));
+    CHECK(run(s.startRange(g, typeBit(VType::U16BE), parseNumber("250"), parseNumber("260"), "250-260",
+                           SearchZone::Heap),
+              &found) == Task::Status::Done);
+    CHECK(containsAddr(s, g.rupeesAddr, VType::U16BE));
+
+    // Valor oculto: la foto compara con los bytes al revés.
+    CHECK(run(s.startHidden(g, kMaskPort, SearchZone::Heap)) == Task::Status::Done);
+    g.gainRupees(-6);   // 256 -> 250: al revés también cruza el byte alto
+    g.noise(20000);
+    CHECK(run(s.refine(g, Relation::Decreased, nullptr, ""), &found) == Task::Status::Done);
+    printf("  oculto, disminuyó -> %llu resultados\n", (unsigned long long)found);
+    CHECK(containsAddr(s, g.rupeesAddr, VType::U16BE));
+
+    // Cambiar, congelar y guardar como truco.
+    GameControl ctl;
+    ctl.attach(&g, freshDir("ports_sd"));
+    CHECK(ctl.readValue(g.rupeesAddr, VType::U16BE, raw) && raw == 250);
+    CHECK(ctl.setValue(g.rupeesAddr, VType::U16BE, 5000) && g.getU16BE(g.rupeesAddr) == 5000);
+    CHECK(ctl.toggleFreeze(g.rupeesAddr, VType::U16BE).ok);
+    g.gainRupees(-100);
+    CHECK(g.getU16BE(g.rupeesAddr) == 5000);
+    CHECK(ctl.setValue(g.rupeesAddr, VType::U16BE, 999));
+    g.gainRupees(-1);
+    CHECK(g.getU16BE(g.rupeesAddr) == 999);
+    std::vector<uint32_t> ops = cheatStoreStatic(RegionKind::Heap, 0x3C4C0C, VType::U16BE, 5000);
+    CHECK(ops.size() == 3 && ops[0] == 0x02100000u && ops[1] == 0x003C4C0Cu && ops[2] == 0x8813u);
+    g.addCheat("Rupias", ops, true);
+    ctl.toggleFreeze(g.rupeesAddr, VType::U16BE);
+    g.tick();
+    CHECK(g.lastVmOk && g.getU16BE(g.rupeesAddr) == 5000);
+
+    // Mis valores guarda el tipo; el multiplicador no está disponible (y lo explica).
+    const std::string fdir = freshDir("ports_favs");
+    FavoriteStore fs(fdir);
+    fs.load(g.info().titleId);
+    Favorite f;
+    f.name = "Rupias";
+    f.type = VType::U16BE;
+    f.region = g.info().classify(g.rupeesAddr, &f.offset);
+    fs.items().push_back(f);
+    CHECK(fs.save());
+    FavoriteStore fs2(fdir);
+    CHECK(fs2.load(g.info().titleId) && fs2.items().size() == 1 && fs2.items()[0].type == VType::U16BE);
+    CHECK(!multiplierSupported(VType::U16BE) && !multiplierSupported(VType::S32BE));
+    std::string title, body;
+    multiplierUnsupported(VType::U16BE, "Rupias", title, body);
+    CHECK(title == "No disponible en ports" && body.find("Rupias") != std::string::npos);
+    const OpResult r = ctl.activateMultiplier(f, 2, false);
+    CHECK(!r.ok && r.title == "No disponible en ports");
+}
+
 int main() {
     testValues();
     testKnownSearch();
@@ -845,6 +953,7 @@ int main() {
     testFreeze();
     testLowMemory();
     testSharedSession();
+    testPorts();
     printf("\n%d comprobaciones correctas, %d fallos\n", g_ok, g_fail);
     return g_fail ? 1 : 0;
 }

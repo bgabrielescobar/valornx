@@ -18,7 +18,7 @@
 namespace vnx {
 
 constexpr const char* kAppName = "ValorNX";
-constexpr const char* kAppVersion = "1.3.0";
+constexpr const char* kAppVersion = "1.4.0";
 
 namespace theme {
 constexpr Color bg = rgba(0x1B, 0x1D, 0x23);

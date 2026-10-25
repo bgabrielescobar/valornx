@@ -1,0 +1,45 @@
+echo == Port de Wii U o GameCube: rupias de 2 bytes al revés (150)
+wait 2
+press A
+wait 1
+press L
+shot 90_port_teclado_tipo
+type 150
+press PLUS
+waittask
+shot 91_port_150
+echo == Las rupias suben a 256 (cambia el byte alto)
+game gain_rupees 106
+game noise 3000
+press A
+type 256
+press PLUS
+waittask
+shot 92_port_256
+press A
+wait 2
+shot 93_port_resultados
+press A
+wait 1
+shot 94_port_menu_resultado
+press A
+wait 1
+type 5000
+press PLUS
+wait 2
+expect_rupees 5000
+shot 95_port_cambiado
+echo == Overlay: el tipo en la lista del valor oculto y en el teclado
+ovl show
+ovl press RIGHT
+ovl press UP
+ovl press A
+ovl press A
+ovl press DOWN 2
+ovl press A
+ovl press DOWN 7
+ovl shot 96_ovl_tipo_oculto_port
+ovl press B
+ovl press UP 2
+ovl press A
+ovl shot 97_ovl_teclado_port

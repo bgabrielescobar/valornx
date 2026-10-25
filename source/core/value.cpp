@@ -10,16 +10,36 @@ namespace vnx {
 int vtypeSize(VType t) {
     switch (t) {
         case VType::U8: return 1;
-        case VType::U16: return 2;
-        case VType::S32: return 4;
+        case VType::U16:
+        case VType::U16BE: return 2;
+        case VType::S32:
+        case VType::S32BE: return 4;
         case VType::S64: return 8;
-        case VType::F32: return 4;
+        case VType::F32:
+        case VType::F32BE: return 4;
         case VType::F64: return 8;
     }
     return 4;
 }
 
-bool vtypeIsFloat(VType t) { return t == VType::F32 || t == VType::F64; }
+bool vtypeIsFloat(VType t) { return t == VType::F32 || t == VType::F64 || t == VType::F32BE; }
+
+bool vtypeSwapped(VType t) { return t == VType::U16BE || t == VType::S32BE || t == VType::F32BE; }
+
+bool maskHasFloat(TypeMask mask) {
+    for (int i = 0; i < kVTypeCount; i++)
+        if ((mask & typeBit((VType)i)) && vtypeIsFloat((VType)i)) return true;
+    return false;
+}
+
+uint64_t swapBytes(uint64_t v, int size) {
+    switch (size) {
+        case 2: return __builtin_bswap16((uint16_t)v);
+        case 4: return __builtin_bswap32((uint32_t)v);
+        case 8: return __builtin_bswap64(v);
+    }
+    return v;
+}
 
 const char* vtypeShort(VType t) {
     switch (t) {
@@ -29,6 +49,9 @@ const char* vtypeShort(VType t) {
         case VType::S64: return "Entero 8B";
         case VType::F32: return "Decimal";
         case VType::F64: return "Doble";
+        case VType::U16BE: return "Port 2B";
+        case VType::S32BE: return "Port entero";
+        case VType::F32BE: return "Port decimal";
     }
     return "?";
 }
@@ -41,6 +64,9 @@ const char* vtypeLabel(VType t) {
         case VType::S64: return "Entero grande (8 bytes)";
         case VType::F32: return "Decimal (float)";
         case VType::F64: return "Decimal doble (double)";
+        case VType::U16BE: return "Entero pequeño (2 bytes, port)";
+        case VType::S32BE: return "Entero (4 bytes, port)";
+        case VType::F32BE: return "Decimal (float, port)";
     }
     return "?";
 }
@@ -60,6 +86,10 @@ static const TypeChoice kChoices[] = {
      "Cantidades enormes, por ejemplo dinero de más de 2.000 millones."},
     {typeBit(VType::F64), "Decimal doble (double)",
      "Poco común. Algunos juegos lo usan para dinero o tiempo."},
+    // Al final, para que el número de tipo guardado en los ajustes siga apuntando al mismo.
+    {kMaskPort, "Port de Wii U o GameCube",
+     "Para juegos de Wii U o GameCube pasados a Switch (como Wind Waker HD), que guardan los números al revés. "
+     "Busca enteros y decimales a la vez."},
 };
 
 int typeChoiceCount() { return (int)(sizeof(kChoices) / sizeof(kChoices[0])); }
@@ -143,10 +173,12 @@ bool encodeNumber(VType t, const Number& n, uint64_t& raw) {
             raw = (uint8_t)n.i;
             return true;
         case VType::U16:
+        case VType::U16BE:
             if (n.isDecimal || n.i < -32768 || n.i > 65535) return false;
             raw = (uint16_t)n.i;
             return true;
         case VType::S32:
+        case VType::S32BE:
             if (n.isDecimal || n.i < (int64_t)INT32_MIN || n.i > (int64_t)UINT32_MAX) return false;
             raw = (uint32_t)n.i;
             return true;
@@ -154,7 +186,8 @@ bool encodeNumber(VType t, const Number& n, uint64_t& raw) {
             if (n.isDecimal) return false;
             raw = (uint64_t)n.i;
             return true;
-        case VType::F32: {
+        case VType::F32:
+        case VType::F32BE: {
             float f = (float)n.d;
             if (!std::isfinite(f)) return false;
             uint32_t u;
@@ -224,8 +257,10 @@ Target makeRangeTarget(const Number& a, const Number& b, TypeMask types) {
         int64_t tmin = 0, tmax = 0;
         switch (vt) {
             case VType::U8: tmax = 0xFF; break;
-            case VType::U16: tmax = 0xFFFF; break;
+            case VType::U16:
+            case VType::U16BE: tmax = 0xFFFF; break;
             case VType::S32:
+            case VType::S32BE:
                 tmin = INT32_MIN;
                 tmax = INT32_MAX;
                 break;
@@ -234,7 +269,8 @@ Target makeRangeTarget(const Number& a, const Number& b, TypeMask types) {
                 tmax = INT64_MAX;
                 break;
             case VType::F32:
-            case VType::F64: t.ok[i] = std::isfinite(t.lo) && std::isfinite(t.hi); continue;
+            case VType::F64:
+            case VType::F32BE: t.ok[i] = std::isfinite(t.lo) && std::isfinite(t.hi); continue;
         }
         t.ok[i] = t.imin <= t.imax && t.imax >= tmin && t.imin <= tmax;
     }
@@ -244,8 +280,10 @@ Target makeRangeTarget(const Number& a, const Number& b, TypeMask types) {
 int64_t rawAsInt(VType t, uint64_t raw) {
     switch (t) {
         case VType::U8: return (uint8_t)raw;
-        case VType::U16: return (uint16_t)raw;
-        case VType::S32: return (int32_t)(uint32_t)raw;
+        case VType::U16:
+        case VType::U16BE: return (uint16_t)raw;
+        case VType::S32:
+        case VType::S32BE: return (int32_t)(uint32_t)raw;
         default: return (int64_t)raw;
     }
 }
@@ -264,27 +302,28 @@ bool targetMatch(VType t, uint64_t raw, const Target& tg) {
 }
 
 uint64_t loadRaw(const uint8_t* p, VType t) {
+    uint64_t v = 0;
     switch (vtypeSize(t)) {
-        case 1: return p[0];
+        case 1: v = p[0]; break;
         case 2: {
-            uint16_t v;
-            memcpy(&v, p, 2);
-            return v;
+            uint16_t x;
+            memcpy(&x, p, 2);
+            v = x;
+            break;
         }
         case 4: {
-            uint32_t v;
-            memcpy(&v, p, 4);
-            return v;
+            uint32_t x;
+            memcpy(&x, p, 4);
+            v = x;
+            break;
         }
-        default: {
-            uint64_t v;
-            memcpy(&v, p, 8);
-            return v;
-        }
+        default: memcpy(&v, p, 8); break;
     }
+    return vtypeSwapped(t) ? swapBytes(v, vtypeSize(t)) : v;
 }
 
 void storeRaw(uint8_t* p, VType t, uint64_t raw) {
+    if (vtypeSwapped(t)) raw = swapBytes(raw, vtypeSize(t));
     switch (vtypeSize(t)) {
         case 1: p[0] = (uint8_t)raw; break;
         case 2: {
@@ -304,10 +343,13 @@ void storeRaw(uint8_t* p, VType t, uint64_t raw) {
 double rawAsDouble(VType t, uint64_t raw) {
     switch (t) {
         case VType::U8: return (double)(uint8_t)raw;
-        case VType::U16: return (double)(uint16_t)raw;
-        case VType::S32: return (double)(int32_t)(uint32_t)raw;
+        case VType::U16:
+        case VType::U16BE: return (double)(uint16_t)raw;
+        case VType::S32:
+        case VType::S32BE: return (double)(int32_t)(uint32_t)raw;
         case VType::S64: return (double)(int64_t)raw;
-        case VType::F32: {
+        case VType::F32:
+        case VType::F32BE: {
             uint32_t u = (uint32_t)raw;
             float f;
             memcpy(&f, &u, 4);
@@ -345,11 +387,14 @@ std::string formatRaw(VType t, uint64_t raw) {
     char buf[48];
     switch (t) {
         case VType::U8: snprintf(buf, sizeof(buf), "%u", (unsigned)(uint8_t)raw); return buf;
-        case VType::U16: snprintf(buf, sizeof(buf), "%u", (unsigned)(uint16_t)raw); return buf;
-        case VType::S32: snprintf(buf, sizeof(buf), "%d", (int)(int32_t)(uint32_t)raw); return buf;
+        case VType::U16:
+        case VType::U16BE: snprintf(buf, sizeof(buf), "%u", (unsigned)(uint16_t)raw); return buf;
+        case VType::S32:
+        case VType::S32BE: snprintf(buf, sizeof(buf), "%d", (int)(int32_t)(uint32_t)raw); return buf;
         case VType::S64: snprintf(buf, sizeof(buf), "%lld", (long long)(int64_t)raw); return buf;
         case VType::F32:
-        case VType::F64: return formatDouble(rawAsDouble(t, raw));
+        case VType::F64:
+        case VType::F32BE: return formatDouble(rawAsDouble(t, raw));
     }
     return "?";
 }

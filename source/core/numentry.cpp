@@ -60,7 +60,7 @@ std::string numberErrorForType(VType t, const Number& n) {
     if (encodeNumber(t, n, raw)) return "";
     if (n.isDecimal && !vtypeIsFloat(t)) return "Este valor es un número entero: no admite decimales.";
     if (t == VType::U8) return "Para este tipo el número debe estar entre 0 y 255.";
-    if (t == VType::U16) return "Para este tipo el número debe estar entre 0 y 65535.";
+    if (t == VType::U16 || t == VType::U16BE) return "Para este tipo el número debe estar entre 0 y 65535.";
     return "El número es demasiado grande para este tipo de valor.";
 }
 

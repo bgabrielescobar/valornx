@@ -36,9 +36,15 @@ public:
     void setS32(uint64_t addr, int32_t v);
     float getF32(uint64_t addr);
     void setF32(uint64_t addr, float v);
+    // Con los bytes al revés (big-endian), como en un port de Wii U o GameCube.
+    uint16_t getU16BE(uint64_t addr);
+    void setU16BE(uint64_t addr, uint16_t v);
+    float getF32BE(uint64_t addr);
+    void setF32BE(uint64_t addr, float v);
 
     // Variables del "juego"
     uint64_t moneyAddr = 0, moneyCopyAddr = 0, hpAddr = 0, expAddr = 0, levelAddr = 0, itemsAddr = 0;
+    uint64_t rupeesAddr = 0, magicAddr = 0;   // big-endian (2 bytes y decimal)
     uint64_t ioValueAddr = 0, badPageValueAddr = 0, goodPageValueAddr = 0;
     uint64_t farAddr = 0;      // valor muy lejos en la zona ASLR (más de 64 GB)
     uint64_t bssEnd = 0;       // fin de la .bss del ejecutable (según MOD0)
@@ -48,6 +54,7 @@ public:
     void spendMoney(int32_t n);
     void takeDamage(float x);
     void gainExp(int32_t n);
+    void gainRupees(int n);
     void setPid(uint64_t pid) { m_pi.processId = pid; }
 
 private:

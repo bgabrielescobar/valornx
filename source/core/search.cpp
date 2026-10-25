@@ -155,23 +155,35 @@ bool onBadPage(const std::vector<uint8_t>& bad, uint64_t chunkAddr, uint64_t add
 
 // ---------------------------------------------------------------- comparaciones
 
-template <typename T>
+// Lee un T de la memoria. Con Swap, con los bytes al revés (tipos BE de los ports).
+template <typename T, bool Swap>
+inline T loadT(const uint8_t* p) {
+    T v;
+    if (Swap) {
+        uint8_t b[sizeof(T)];
+        for (size_t k = 0; k < sizeof(T); k++) b[k] = p[sizeof(T) - 1 - k];
+        memcpy(&v, b, sizeof(T));
+    } else {
+        memcpy(&v, p, sizeof(T));
+    }
+    return v;
+}
+
+template <typename T, bool Swap = false>
 void scanEq(const uint8_t* data, size_t len, uint64_t base, VType vt, T want, std::vector<Candidate>& out) {
     const size_t n = len / sizeof(T);
     for (size_t i = 0; i < n; i++) {
-        T v;
-        memcpy(&v, data + i * sizeof(T), sizeof(T));
+        const T v = loadT<T, Swap>(data + i * sizeof(T));
         if (v == want) out.push_back(makeCand(base + i * sizeof(T), vt, (uint64_t)v));
     }
 }
 
-template <typename F, typename U>
+template <typename F, typename U, bool Swap = false>
 void scanRange(const uint8_t* data, size_t len, uint64_t base, VType vt, double lo, double hi,
                std::vector<Candidate>& out) {
     const size_t n = len / sizeof(F);
     for (size_t i = 0; i < n; i++) {
-        F v;
-        memcpy(&v, data + i * sizeof(F), sizeof(F));
+        const F v = loadT<F, Swap>(data + i * sizeof(F));
         const double d = (double)v;
         if (d > lo && d < hi) {
             U u;
@@ -182,7 +194,7 @@ void scanRange(const uint8_t* data, size_t len, uint64_t base, VType vt, double 
 }
 
 // Enteros entre dos límites (ambos incluidos), comparando en el tipo nativo.
-template <typename T>
+template <typename T, bool Swap = false>
 void scanBetween(const uint8_t* data, size_t len, uint64_t base, VType vt, int64_t lo64, int64_t hi64,
                  std::vector<Candidate>& out) {
     const int64_t tmin = (int64_t)std::numeric_limits<T>::min();
@@ -190,8 +202,7 @@ void scanBetween(const uint8_t* data, size_t len, uint64_t base, VType vt, int64
     const T lo = (T)std::max(lo64, tmin), hi = (T)std::min(hi64, tmax);
     const size_t n = len / sizeof(T);
     for (size_t i = 0; i < n; i++) {
-        T v;
-        memcpy(&v, data + i * sizeof(T), sizeof(T));
+        const T v = loadT<T, Swap>(data + i * sizeof(T));
         if (v >= lo && v <= hi) {
             uint64_t raw = 0;
             memcpy(&raw, &v, sizeof(T));
@@ -215,6 +226,9 @@ void scanTarget(const uint8_t* data, size_t len, uint64_t base, TypeMask types, 
                 case VType::S64: scanBetween<int64_t>(data, len, base, vt, tg.imin, tg.imax, out); break;
                 case VType::F32: scanRange<float, uint32_t>(data, len, base, vt, tg.lo, tg.hi, out); break;
                 case VType::F64: scanRange<double, uint64_t>(data, len, base, vt, tg.lo, tg.hi, out); break;
+                case VType::U16BE: scanBetween<uint16_t, true>(data, len, base, vt, tg.imin, tg.imax, out); break;
+                case VType::S32BE: scanBetween<int32_t, true>(data, len, base, vt, tg.imin, tg.imax, out); break;
+                case VType::F32BE: scanRange<float, uint32_t, true>(data, len, base, vt, tg.lo, tg.hi, out); break;
             }
             continue;
         }
@@ -225,19 +239,21 @@ void scanTarget(const uint8_t* data, size_t len, uint64_t base, TypeMask types, 
             case VType::S64: scanEq<uint64_t>(data, len, base, vt, tg.raw[i], out); break;
             case VType::F32: scanRange<float, uint32_t>(data, len, base, vt, tg.lo, tg.hi, out); break;
             case VType::F64: scanRange<double, uint64_t>(data, len, base, vt, tg.lo, tg.hi, out); break;
+            case VType::U16BE: scanEq<uint16_t, true>(data, len, base, vt, (uint16_t)tg.raw[i], out); break;
+            case VType::S32BE: scanEq<uint32_t, true>(data, len, base, vt, (uint32_t)tg.raw[i], out); break;
+            case VType::F32BE: scanRange<float, uint32_t, true>(data, len, base, vt, tg.lo, tg.hi, out); break;
         }
     }
     if (maskCount(types) > 1) std::sort(out.begin() + first, out.end(), candLess);
 }
 
-template <typename T, typename Cmp>
+template <typename T, bool Swap = false, typename Cmp>
 void cmpKernel(const uint8_t* o, const uint8_t* n, size_t len, uint64_t base, VType vt, Cmp cmp,
                std::vector<Candidate>& out) {
     const size_t cnt = len / sizeof(T);
     for (size_t i = 0; i < cnt; i++) {
-        T a, b;
-        memcpy(&a, o + i * sizeof(T), sizeof(T));
-        memcpy(&b, n + i * sizeof(T), sizeof(T));
+        const T a = loadT<T, Swap>(o + i * sizeof(T));
+        const T b = loadT<T, Swap>(n + i * sizeof(T));
         if (cmp(a, b)) {
             uint64_t raw = 0;
             memcpy(&raw, &b, sizeof(T));
@@ -275,6 +291,19 @@ void cmpTyped(VType vt, bool bitwise, const uint8_t* o, const uint8_t* n, size_t
                 cmpKernel<uint64_t>(o, n, len, base, vt, cmp, out);
             else
                 cmpKernel<double>(o, n, len, base, vt, cmp, out);
+            break;
+        case VType::U16BE: cmpKernel<uint16_t, true>(o, n, len, base, vt, cmp, out); break;
+        case VType::S32BE:
+            if (bitwise)
+                cmpKernel<uint32_t, true>(o, n, len, base, vt, cmp, out);
+            else
+                cmpKernel<int32_t, true>(o, n, len, base, vt, cmp, out);
+            break;
+        case VType::F32BE:
+            if (bitwise)
+                cmpKernel<uint32_t, true>(o, n, len, base, vt, cmp, out);
+            else
+                cmpKernel<float, true>(o, n, len, base, vt, cmp, out);
             break;
     }
 }
@@ -315,11 +344,14 @@ void compareBlock(TypeMask types, Relation rel, const uint8_t* o, const uint8_t*
 bool typedLess(VType t, uint64_t a, uint64_t b) {
     switch (t) {
         case VType::U8:
-        case VType::U16: return a < b;
-        case VType::S32: return (int32_t)(uint32_t)a < (int32_t)(uint32_t)b;
+        case VType::U16:
+        case VType::U16BE: return a < b;
+        case VType::S32:
+        case VType::S32BE: return (int32_t)(uint32_t)a < (int32_t)(uint32_t)b;
         case VType::S64: return (int64_t)a < (int64_t)b;
         case VType::F32:
-        case VType::F64: return rawAsDouble(t, a) < rawAsDouble(t, b);
+        case VType::F64:
+        case VType::F32BE: return rawAsDouble(t, a) < rawAsDouble(t, b);
     }
     return false;
 }

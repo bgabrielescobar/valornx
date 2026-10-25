@@ -321,6 +321,20 @@ int main(int argc, char** argv) {
                 int n;
                 ss >> n;
                 g->gainExp(n);
+            } else if (what == "gain_rupees") {
+                int n;
+                ss >> n;
+                g->gainRupees(n);
+            }
+        } else if (cmd == "expect_rupees") {
+            int want;
+            ss >> want;
+            const int got = platform.game ? platform.game->getU16BE(platform.game->rupeesAddr) : -1;
+            if (got != want) {
+                printf("  FALLO línea %d: rupias = %d, se esperaba %d\n", lineNo, got, want);
+                failures++;
+            } else {
+                printf("  ok: rupias = %d\n", got);
             }
         } else if (cmd == "expect_money") {
             int want;

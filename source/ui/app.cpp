@@ -407,10 +407,9 @@ void App::saveFavorite(uint64_t addr, VType t, std::function<void(const Favorite
 void App::openMultiplier(const Favorite& f) {
     if (!game) return;
     if (!multiplierSupported(f.type)) {
-        message("Solo con números enteros",
-                "El multiplicador funciona con valores enteros (dinero, experiencia, puntos…). \"" + f.name +
-                    "\" es un número decimal, así que no se puede multiplicar.",
-                Icon::Warning);
+        std::string title, body;
+        multiplierUnsupported(f.type, f.name, title, body);
+        message(title, body, Icon::Warning);
         return;
     }
     ctl.refreshCheats();

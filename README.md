@@ -119,8 +119,11 @@ Los juegos guardan los números en formatos distintos. Al empezar una búsqueda 
 | **Byte (1 byte)** | Cantidades pequeñas (máximo 255). Da muchísimos resultados. |
 | **Entero grande (8 bytes)** | Cantidades enormes, por ejemplo dinero de más de 2.000 millones. |
 | **Decimal doble (double)** | Poco común. Algunos juegos lo usan para dinero o tiempo. |
+| **Port de Wii U o GameCube** | Para juegos de Wii U o GameCube pasados a Switch, como Wind Waker HD (SwitchWakerHD). Busca enteros de 2 y 4 bytes y decimales a la vez. |
 
 El tipo ya no cambia mientras sigues esa búsqueda. ValorNX recuerda el último tipo que usaste.
+
+**Ports de Wii U o GameCube.** Algunos ports traducen el código original de la consola en vez de rehacer el juego, y la memoria se queda como en esa consola: los números se guardan **con los bytes al revés** (big-endian). Por ejemplo, 150 rupias son los bytes `00 96`, que leídos como en un juego de Switch dan 38400. Por eso ninguno de los otros tipos los encuentra. Con el tipo **Port de Wii U o GameCube** escribes el número tal como lo ves, y ValorNX le da la vuelta al buscar, al mostrarlo, al cambiarlo y al guardarlo como truco. No lo necesitan los ports hechos a partir del código fuente del juego (como SwitchWaker, el de GameCube, o los de Ocarina of Time y Super Mario 64): ahí los números se guardan normal. El multiplicador no funciona con estos valores.
 
 Los decimales que salen en pantalla suelen estar redondeados, así que al buscar decimales se acepta un margen de una unidad en la última cifra que escribes: `87` encuentra todo lo que esté entre 86 y 88, y `87.5`, entre 87,4 y 87,6.
 
@@ -251,7 +254,7 @@ Cómo funciona: ValorNX crea un programa para el sistema de trucos de Atmosphèr
 
 - Desde **Mis valores** puedes cambiar el multiplicador, pausarlo (**Pausar**), reanudarlo (**Reanudar**) o quitarlo (**Quitar el multiplicador**). Lo que ganes mientras está en pausa no se multiplica. También se ve y se puede apagar desde EdiZon o Breeze.
 - Al quitarlo también se borra del archivo de trucos, si estaba guardado ahí.
-- Solo funciona con números **enteros** (no con decimales) y tiene un tope para no desbordar el valor.
+- Solo funciona con números **enteros** (no con decimales ni con valores de ports de Wii U o GameCube) y tiene un tope para no desbordar el valor.
 - Hasta 16 multiplicadores por juego, según el espacio libre. Si no quedan huecos, quita alguno que no uses.
 - Si en tu juego la experiencia vuelve a 0 al subir de nivel, la ganancia que te hace subir de nivel no se multiplica (el truco ve que el valor bajó).
 - Si el valor pasa por 0 (por ejemplo, en la pantalla de título), lo que se cargue después no se multiplica. Por eso conviene activarlo ya dentro de la partida.
@@ -368,7 +371,7 @@ La **búsqueda en curso**, en cambio, solo dura mientras sigue abierta la misma 
 
 - **Haz copia de tu partida** (por ejemplo con JKSV) antes de cambiar valores.
 - **No lo uses en juegos en línea**: puedes recibir un baneo.
-- **¿No encuentras nada?** Usa el tipo **Automático** y comprueba que escribes el número exacto. La vida en juegos de acción suele ser **Decimal**.
+- **¿No encuentras nada?** Usa el tipo **Automático** y comprueba que escribes el número exacto. La vida en juegos de acción suele ser **Decimal**. Si es un port de un juego de Wii U o GameCube, usa el tipo **Port de Wii U o GameCube**.
 - **¿Quedan varios resultados?** Cambia uno cada vez y mira cuál afecta al juego, o usa **Cambiar todos**.
 - **¿La pantalla no se actualiza tras cambiarlo?** Algunos juegos muestran una copia del valor: gasta o gana algo para que se refresque.
 - **"Hay demasiados resultados"**: el valor es muy común. Cámbialo en el juego a un número más raro y busca otra vez, o usa un rango más pequeño o un tipo concreto.

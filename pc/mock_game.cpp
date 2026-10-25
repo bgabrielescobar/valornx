@@ -73,6 +73,8 @@ MockGame::MockGame(uint64_t heapSize) {
     expAddr = mainBase + 0xA00100;
     levelAddr = heap + 0x8000;
     itemsAddr = heap + 0x9001;
+    rupeesAddr = heap + 0x3C4C0C;
+    magicAddr = heap + 0x3C4C20;
     ioValueAddr = 0x0000000900000000ull + 0x100;
     farAddr = m_pi.aslr.base + 0x1100000000ull + 0x40;
     badPageValueAddr = h2.badPageStart + 0x10;
@@ -110,6 +112,8 @@ MockGame::MockGame(uint64_t heapSize) {
     write(levelAddr, &lvl, 2);
     uint8_t items = 5;
     write(itemsAddr, &items, 1);
+    setU16BE(rupeesAddr, 150);
+    setF32BE(magicAddr, 32.0f);
     // Valores trampa: en E/S (no se debe leer) y en la página ilegible.
     int32_t special = 424242;
     for (Seg& s : m_segs)
@@ -226,6 +230,7 @@ void MockGame::noise(int count) {
         if (addr >= moneyAddr - 64 && addr <= moneyAddr + 64) continue;
         if (addr >= moneyCopyAddr - 64 && addr <= moneyCopyAddr + 64) continue;
         if (addr >= levelAddr - 64 && addr <= itemsAddr + 64) continue;
+        if (addr >= rupeesAddr - 64 && addr <= magicAddr + 64) continue;
         uint32_t v;
         memcpy(&v, &heap.data[off], 4);
         v += (rnd() & 1) ? 1 : (uint32_t)-1;
@@ -246,6 +251,29 @@ float MockGame::getF32(uint64_t addr) {
     return v;
 }
 void MockGame::setF32(uint64_t addr, float v) { write(addr, &v, 4); }
+uint16_t MockGame::getU16BE(uint64_t addr) {
+    uint8_t b[2] = {};
+    read(addr, b, 2);
+    return (uint16_t)((b[0] << 8) | b[1]);
+}
+void MockGame::setU16BE(uint64_t addr, uint16_t v) {
+    const uint8_t b[2] = {(uint8_t)(v >> 8), (uint8_t)v};
+    write(addr, b, 2);
+}
+float MockGame::getF32BE(uint64_t addr) {
+    uint8_t b[4] = {};
+    read(addr, b, 4);
+    const uint32_t u = ((uint32_t)b[0] << 24) | ((uint32_t)b[1] << 16) | ((uint32_t)b[2] << 8) | b[3];
+    float f;
+    memcpy(&f, &u, 4);
+    return f;
+}
+void MockGame::setF32BE(uint64_t addr, float v) {
+    uint32_t u;
+    memcpy(&u, &v, 4);
+    const uint8_t b[4] = {(uint8_t)(u >> 24), (uint8_t)(u >> 16), (uint8_t)(u >> 8), (uint8_t)u};
+    write(addr, b, 4);
+}
 
 void MockGame::spendMoney(int32_t n) {
     setS32(moneyAddr, getS32(moneyAddr) - n);
@@ -259,3 +287,8 @@ void MockGame::takeDamage(float x) {
 }
 
 void MockGame::gainExp(int32_t n) { setS32(expAddr, getS32(expAddr) + n); }
+
+void MockGame::gainRupees(int n) {
+    setU16BE(rupeesAddr, (uint16_t)(getU16BE(rupeesAddr) + n));
+    tick();
+}

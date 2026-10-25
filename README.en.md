@@ -121,8 +121,11 @@ Games store numbers in different formats. When you start a search you choose the
 | **Byte (1 byte)** | Small amounts (max 255). Gives a huge number of results. |
 | **Entero grande (8 bytes)** ("Big integer") | Huge amounts, for example money over 2 billion. |
 | **Decimal doble (double)** | Uncommon. Some games use it for money or time. |
+| **Port de Wii U o GameCube** ("Wii U or GameCube port") | For Wii U or GameCube games ported to Switch, like Wind Waker HD (SwitchWakerHD). Searches 2-byte and 4-byte integers and decimals at the same time. |
 
 The type is fixed for the rest of that search. ValorNX remembers the last type you used.
+
+**Wii U or GameCube ports.** Some ports translate the console's original code instead of rebuilding the game, so memory stays the way it was on that console: numbers are stored **with their bytes reversed** (big-endian). For example, 150 rupees are the bytes `00 96`, which read like a Switch game gives 38400. That's why none of the other types find them. With the **Port de Wii U o GameCube** type you type the number as you see it, and ValorNX reverses it when searching, showing, changing and saving it as a cheat. Ports rebuilt from the game's source code (like SwitchWaker, the GameCube one, or the Ocarina of Time and Super Mario 64 ports) don't need it: they store numbers normally. The multiplier doesn't work with these values.
 
 Decimal numbers on screen are usually rounded, so decimal searches accept a margin of one unit in the last digit you type: `87` finds anything above 86 and below 88, and `87.5` finds anything above 87.4 and below 87.6.
 
@@ -253,7 +256,7 @@ How it works: ValorNX creates a program for Atmosphère's cheat engine, which ru
 
 - From **Mis valores** you can change the factor, pause it (**Pausar**), resume it (**Reanudar**) or remove it (**Quitar el multiplicador**). What you earn while it's paused isn't multiplied. You can also see and switch it off from EdiZon or Breeze.
 - Removing it also deletes it from the cheat file if it was saved there.
-- **Integers only**, not decimals. There's a cap so the value can't overflow.
+- **Integers only**, not decimals or values from Wii U or GameCube ports. There's a cap so the value can't overflow.
 - Up to 16 multipliers per game, depending on free space. If there's no room left, remove one you don't use.
 - If your game resets EXP to 0 on level-up, the gain that levels you up isn't multiplied, because the cheat sees the value going down.
 - If the value passes through 0 (for example on the title screen), whatever loads afterwards isn't multiplied. That's why you should turn it on once you're playing.
@@ -370,7 +373,7 @@ The **search in progress**, however, only lasts while the same game session is r
 
 - **Back up your save** (for example with JKSV) before changing values.
 - **Don't use it in online games**: you can get banned.
-- **Nothing found?** Use the **Automático** type and make sure you type the exact number. Health in action games is often **Decimal**.
+- **Nothing found?** Use the **Automático** type and make sure you type the exact number. Health in action games is often **Decimal**. If it's a port of a Wii U or GameCube game, use the **Port de Wii U o GameCube** type.
 - **Several results?** Change one at a time and see which one affects the game, or use **Cambiar todos** ("Change all").
 - **The screen doesn't update after a change?** Some games show a copy of the value: spend or earn something so it refreshes.
 - **"Too many results"**: the value is very common. Change it in the game to a rarer number and search again, or use a smaller range or a specific type.

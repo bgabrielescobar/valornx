@@ -117,10 +117,11 @@ uint64_t GameControl::slotAddr(const MultiplierSpec& s) const {
 OpResult GameControl::activateMultiplier(const Favorite& f, uint32_t factor, bool saveFile, bool keepSaved) {
     const char* kTitle = "No se pudo activar el multiplicador";
     if (!m_game) return notice(false, "No hay ningún juego abierto.");
-    if (!multiplierSupported(f.type))
-        return failure("Solo con números enteros",
-                       "El multiplicador funciona con valores enteros (dinero, experiencia, puntos…). \"" + f.name +
-                           "\" es un número decimal, así que no se puede multiplicar.");
+    if (!multiplierSupported(f.type)) {
+        std::string title, body;
+        multiplierUnsupported(f.type, f.name, title, body);
+        return failure(title, body);
+    }
     ScratchArea area;
     std::string err;
     if (!findScratch(*m_game, area, err)) return failure(kTitle, err);

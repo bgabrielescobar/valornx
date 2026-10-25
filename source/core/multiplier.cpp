@@ -53,7 +53,19 @@ bool typeFromWidth(uint32_t w, VType& t) {
 
 }  // namespace
 
-bool multiplierSupported(VType t) { return !vtypeIsFloat(t); }
+bool multiplierSupported(VType t) { return !vtypeIsFloat(t) && !vtypeSwapped(t); }
+
+void multiplierUnsupported(VType t, const std::string& valueName, std::string& title, std::string& body) {
+    if (vtypeIsFloat(t)) {
+        title = "Solo con números enteros";
+        body = "El multiplicador funciona con valores enteros (dinero, experiencia, puntos…). \"" + valueName +
+               "\" es un número decimal, así que no se puede multiplicar.";
+    } else {
+        title = "No disponible en ports";
+        body = "El multiplicador no funciona con valores de ports de Wii U o GameCube (guardan los números al "
+               "revés). \"" + valueName + "\" sí se puede cambiar y congelar.";
+    }
+}
 
 uint64_t multiplierCap(VType t) {
     switch (t) {

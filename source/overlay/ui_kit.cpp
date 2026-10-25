@@ -59,6 +59,7 @@ const char* shortTypeHelp(int choice) {
         "Hasta 255. Da muchísimos resultados.",
         "Cantidades enormes (más de 2.000 millones).",
         "Poco común: algunos juegos, para el dinero.",
+        "Juegos de Wii U o GameCube (Wind Waker HD).",
     };
     const int n = (int)(sizeof(kHelp) / sizeof(kHelp[0]));
     return choice >= 0 && choice < n ? kHelp[choice] : "";
@@ -217,7 +218,7 @@ TypeMask KeypadPage::mask() const { return m_spec.lockedMask ? m_spec.lockedMask
 
 bool KeypadPage::decimalsAllowed() const {
     if (!m_spec.search) return vtypeIsFloat(m_spec.editType);
-    return (mask() & (typeBit(VType::F32) | typeBit(VType::F64))) != 0;
+    return maskHasFloat(mask());
 }
 
 bool KeypadPage::input(Panel& panel, const PanelInput& in) {

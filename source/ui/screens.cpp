@@ -494,7 +494,7 @@ private:
 
     bool decimalsAllowed() const {
         if (!m_spec.search) return vtypeIsFloat(m_spec.editType);
-        return (mask() & (typeBit(VType::F32) | typeBit(VType::F64))) != 0;
+        return maskHasFloat(mask());
     }
 
     // Devuelve true si la pantalla se cerró.
